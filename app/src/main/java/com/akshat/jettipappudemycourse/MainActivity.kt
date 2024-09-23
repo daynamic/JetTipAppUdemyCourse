@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -28,9 +29,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -61,9 +64,15 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun MyApp(content: @Composable () -> Unit) {
     JetTipAppUdemyCourseTheme {
-        Surface(color = MaterialTheme.colorScheme.background) {
-            content()
+        Scaffold { it ->
+            Surface(
+                modifier = Modifier.padding(top = it.calculateTopPadding()),
+                color = MaterialTheme.colorScheme.background
+            ) {
+                content()
+            }
         }
+
     }
 }
 
@@ -72,9 +81,9 @@ fun TopHeader(totalPerPerson: Double = 0.0) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(20.dp)
+            .padding(12.dp)
             .height(150.dp)
-            .clip(shape = RoundedCornerShape(corner = CornerSize(12.dp))),
+            .clip(shape = CircleShape.copy(all = CornerSize(12.dp))),
         color = Color(0xFFE9D7F7)
     ) {
         Column(
@@ -82,13 +91,14 @@ fun TopHeader(totalPerPerson: Double = 0.0) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            val total = "%.2f".format(totalPerPerson)
+
             Text(
                 text = "Total Per Person",
                 style = MaterialTheme.typography.displaySmall
             )
+            val total = "%.2f".format(totalPerPerson)
             Text(
-                text = "$ $total",
+                text = "\$$total",
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -116,7 +126,8 @@ fun MainContent() {
     }
 
     Column(modifier = Modifier.padding(all = 12.dp)) {
-        BillForm(splitByState = splitBy,
+        BillForm(
+            splitByState = splitBy,
             range = range,
             tipAmountState = totalTipAmount,
             totalPerPersonState = totalPerPerson
@@ -141,16 +152,17 @@ fun BillForm(
 
     val totalBill = rememberSaveable { mutableStateOf("") }
 
-    val validState = remember(totalBill.value) {
+    val valid = remember(totalBill.value) {
         totalBill.value.trim().isNotEmpty()
     }
+
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    val sliderPosition = remember {
+    var sliderPosition by remember {
         mutableStateOf(0f)
     }
 
-    val tipPercentage = (sliderPosition.value * 100).toInt()
+    val tipPercentage = (sliderPosition * 100).toInt()
 
 
     TopHeader(totalPerPerson = totalPerPersonState.value)
@@ -159,7 +171,7 @@ fun BillForm(
         modifier = modifier
             .padding(2.dp)
             .fillMaxWidth(),
-        shape = RoundedCornerShape(corner = CornerSize(8.dp)),
+        shape = CircleShape.copy(all = CornerSize(8.dp)),
         border = BorderStroke(width = 1.dp, color = Color.LightGray)
     ) {
         Column(
@@ -173,12 +185,12 @@ fun BillForm(
                 enabled = true,
                 isSingleLine = true,
                 onAction = KeyboardActions {
-                    if (!validState) return@KeyboardActions
+                    if (!valid) return@KeyboardActions
                     onValChange(totalBill.value.trim())
                     keyboardController?.hide()
                 }
             )
-            if (validState) {
+            if (valid) {
                 Row(
                     modifier = Modifier.padding(3.dp),
                     horizontalArrangement = Arrangement.Start
@@ -232,7 +244,8 @@ fun BillForm(
 
                 //Tip Row
                 Row(
-                    modifier = modifier.padding(horizontal = 3.dp, vertical = 12.dp)
+                    modifier = Modifier.padding(horizontal = 3.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.End
                 ) {
                     Text(
                         text = "Tip",
@@ -258,9 +271,9 @@ fun BillForm(
 
                     //Slider
                     Slider(
-                        value = sliderPosition.value,
+                        value = sliderPosition,
                         onValueChange = { newVal ->
-                            sliderPosition.value = newVal
+                            sliderPosition = newVal
                             tipAmountState.value =
                                 calculateTotalTip(
                                     totalBill = totalBill.value.toDouble(),
